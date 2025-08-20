@@ -72,13 +72,14 @@ export class LactationPanel {
 
         const progress = this.manager.getProgress();
         const state = this.manager.state;
+        const capacity = this.manager.getMilkCapacity();
 
         // Update milk display
         const milkBar = this.domElement.querySelector('.milk-bar');
         const milkText = this.domElement.querySelector('.milk-text');
         if (milkBar && milkText) {
             milkBar.style.width = `${progress.milkPercent}%`;
-            milkText.textContent = `${state.currentMilk.toFixed(1)}/${this.manager.getMilkCapacity().toFixed(1)} ml`;
+            milkText.textContent = `${state.currentMilk.toFixed(1)}/${capacity.toFixed(1)} ml`;
         }
 
         // Update EXP display
@@ -92,7 +93,7 @@ export class LactationPanel {
         // Update global storage
         const storageEl = this.domElement.querySelector('.storage-amount');
         if (storageEl) {
-            storageEl.textContent = `${this.manager.globalMilkStorage} ml`;
+            storageEl.textContent = `${this.manager.globalMilkStorage.toFixed(1)} ml`;
         }
     }
 
@@ -173,6 +174,8 @@ export class LactationPanel {
 
                 if (result.amount > 0 && extension_settings.lactation_system?.enableSysMessages) {
                     this.sendSystemMessage(result.message);
+                } else if (result.message && result.amount === 0) {
+                    toastr.info(result.message, "Cannot Milk");
                 }
 
                 this.update();
@@ -182,6 +185,7 @@ export class LactationPanel {
         // Refresh button
         this.domElement.querySelector('#lactation-refresh').addEventListener('click', () => {
             this.manager.loadState();
+            toastr.success("Lactation state reloaded", "Refresh Complete");
             this.update();
         });
 
