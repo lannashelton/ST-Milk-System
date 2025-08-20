@@ -14,6 +14,7 @@ export class LactationPanel {
 
         const characterName = this.manager.character?.name || 'No Character';
         const progress = this.manager.getProgress();
+        const globalStorage = this.manager.getGlobalStorage();
 
         panel.innerHTML = `
             <div class="lactation-header">
@@ -39,6 +40,15 @@ export class LactationPanel {
                     </select>
                 </div>
 
+                <div class="destination-selector">
+                    <label>Milk Destination:</label>
+                    <select id="destination-select">
+                        <option value="global" ${this.manager.destination === 'global' ? 'selected' : ''}>Global Storage</option>
+                        <option value="personal" ${this.manager.destination === 'personal' ? 'selected' : ''}>Personal Storage</option>
+                        <option value="waste" ${this.manager.destination === 'waste' ? 'selected' : ''}>Waste</option>
+                    </select>
+                </div>
+
                 <div class="milk-display">
                     <div class="milk-bar-container">
                         <div class="milk-bar" style="width: ${progress.milkPercent}%"></div>
@@ -60,9 +70,15 @@ export class LactationPanel {
                     <button class="milking-action" data-method="machine">Use Machine</button>
                 </div>
 
-                <div class="global-storage">
-                    <label>Global Milk Storage:</label>
-                    <div class="storage-amount">${this.manager.globalMilkStorage.toFixed(1)} ml</div>
+                <div class="storage-display">
+                    <div class="storage-item">
+                        <label>Personal Storage:</label>
+                        <div class="storage-amount">${progress.personalStorage.toFixed(1)} ml</div>
+                    </div>
+                    <div class="storage-item">
+                        <label>Global Storage:</label>
+                        <div class="storage-amount">${globalStorage.toFixed(1)} ml</div>
+                    </div>
                 </div>
                 ` : '<div class="no-character">No character selected</div>'}
             </div>
@@ -78,6 +94,7 @@ export class LactationPanel {
         const progress = this.manager.getProgress();
         const state = this.manager.state;
         const capacity = this.manager.getMilkCapacity();
+        const globalStorage = this.manager.getGlobalStorage();
 
         // Update milk display
         const milkBar = this.domElement.querySelector('.milk-bar');
@@ -95,10 +112,14 @@ export class LactationPanel {
             expText.textContent = `Level ${state.level} (${state.exp}/${progress.nextLevelExp} EXP)`;
         }
 
-        // Update global storage
-        const storageEl = this.domElement.querySelector('.storage-amount');
-        if (storageEl) {
-            storageEl.textContent = `${this.manager.globalMilkStorage.toFixed(1)} ml`;
+        // Update storage displays
+        const personalStorage = this.domElement.querySelector('.storage-item:first-child .storage-amount');
+        const globalStorageEl = this.domElement.querySelector('.storage-item:last-child .storage-amount');
+        if (personalStorage) {
+            personalStorage.textContent = `${progress.personalStorage.toFixed(1)} ml`;
+        }
+        if (globalStorageEl) {
+            globalStorageEl.textContent = `${globalStorage.toFixed(1)} ml`;
         }
     }
 
@@ -164,6 +185,15 @@ export class LactationPanel {
         // Breast size selector
         this.domElement.querySelector('#breast-size-select')?.addEventListener('change', (e) => {
             const message = this.manager.setBreastSize(e.target.value);
+            if (extension_settings.lactation_system?.enableSysMessages) {
+                this.sendSystemMessage(message);
+            }
+            this.update();
+        });
+
+        // Destination selector
+        this.domElement.querySelector('#destination-select')?.addEventListener('change', (e) => {
+            const message = this.manager.setDestination(e.target.value);
             if (extension_settings.lactation_system?.enableSysMessages) {
                 this.sendSystemMessage(message);
             }
