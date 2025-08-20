@@ -50,13 +50,13 @@ export class LactationManager {
     }
 
     loadState() {
-        this.state.enabled = this.getGlobalVariable(this.getVarName('lactation_enabled')) || false;
+        this.state.enabled = Boolean(this.getGlobalVariable(this.getVarName('lactation_enabled'))) || false;
         this.state.level = parseInt(this.getGlobalVariable(this.getVarName('lactation_level'))) || 1;
         this.state.exp = parseInt(this.getGlobalVariable(this.getVarName('lactation_exp'))) || 0;
         this.state.breastSize = this.getGlobalVariable(this.getVarName('breast_size')) || 'medium';
         this.state.currentMilk = parseFloat(this.getGlobalVariable(this.getVarName('current_milk'))) || 0;
         this.state.overfullCount = 0;
-        this.globalMilkStorage = this.getGlobalVariable('global_milk_storage') || 0;
+        this.globalMilkStorage = parseFloat(this.getGlobalVariable('global_milk_storage')) || 0;
     }
 
     saveState() {
@@ -95,8 +95,7 @@ export class LactationManager {
     }
 
     produceMilk() {
-        // FIXED: Only produce milk if enabled
-        if (!this.state.enabled) return null;
+        if (!this.state.enabled || this.character === 'Unknown') return null;
 
         const settings = extension_settings.lactation_system;
         const milkProduced = (settings?.milkPerMessage || 10) *
@@ -127,7 +126,6 @@ export class LactationManager {
     }
 
     milk(method) {
-        // FIXED: Added safety checks
         if (!this.state.enabled) {
             return { amount: 0, message: "Lactation is not enabled" };
         }
