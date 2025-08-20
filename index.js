@@ -15,8 +15,7 @@ try {
 
         function getCurrentCharacter() {
             const context = getContext();
-            // Get the actual character object, not just name
-            return context.characters[context.characterId];
+            return context.characters[context.characterId] || null;
         }
 
         function updateCharacter() {
@@ -66,7 +65,10 @@ try {
                     if (data.success) {
                         const character = getCurrentCharacter();
                         if (character) {
-                            manager.produceMilk();
+                            const sysMessage = manager.produceMilk();
+                            if (sysMessage && extension_settings[MODULE_NAME]?.enableSysMessages) {
+                                panel.sendSystemMessage(sysMessage);
+                            }
                             panel.update();
                         }
                     }
