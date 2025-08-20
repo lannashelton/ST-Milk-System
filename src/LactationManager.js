@@ -5,7 +5,7 @@ export class LactationManager {
     constructor() {
         this.character = null;
         this.state = {
-            enabled: false,
+            enabled: false, // Disabled by default
             level: 1,
             exp: 0,
             breastSize: 'medium',
@@ -96,7 +96,10 @@ export class LactationManager {
     loadState() {
         if (!this.character) return;
 
-        this.state.enabled = Boolean(this.getGlobalVariable('lactation_enabled')) || false;
+        // For new characters, default enabled to false
+        const enabledVar = this.getGlobalVariable('lactation_enabled');
+        this.state.enabled = typeof enabledVar === 'number' ? Boolean(enabledVar) : false;
+
         this.state.level = parseInt(this.getGlobalVariable('lactation_level')) || 1;
         this.state.exp = parseInt(this.getGlobalVariable('lactation_exp')) || 0;
         this.state.breastSize = this.getGlobalVariable('breast_size') || 'medium';
@@ -122,13 +125,13 @@ export class LactationManager {
     enableLactation() {
         this.state.enabled = true;
         this.saveState();
-        return `${this.character.name} has begun lactating now!`;
+        return `${this.character.name}'s lactation system is now active`;
     }
 
     disableLactation() {
         this.state.enabled = false;
         this.saveState();
-        return `${this.character.name} is no longer able to lactate!`;
+        return `${this.character.name}'s lactation system is now disabled`;
     }
 
     setBreastSize(size) {
@@ -159,19 +162,17 @@ export class LactationManager {
         return this.getGlobalVariable('personal_storage') || 0;
     }
 
-    addToPersonalStorage(amount) {
+    setPersonalStorage(value) {
         if (!this.character) return;
-        const current = this.getPersonalStorage();
-        this.setGlobalVariable('personal_storage', current + amount);
+        this.setGlobalVariable('personal_storage', value);
     }
 
     getGlobalStorage() {
         return this.getSharedGlobal('global_milk_storage') || 0;
     }
 
-    addToGlobalStorage(amount) {
-        const current = this.getGlobalStorage();
-        this.setSharedGlobal('global_milk_storage', current + amount);
+    setGlobalStorage(value) {
+        this.setSharedGlobal('global_milk_storage', value);
     }
 
     getMilkPerMessage() {
@@ -225,7 +226,7 @@ export class LactationManager {
         switch(method) {
             case 'hands':
                 amount = Math.min(50, this.state.currentMilk);
-                message = `${amount}ml was milked from ${this.character.name}'s breasts with hands`;
+                message = `${this.character.name} expressed ${amount}ml using their hands`;
                 expGained = Math.max(1, Math.floor(amount / 5));
                 break;
 
@@ -237,7 +238,7 @@ export class LactationManager {
 
             case 'machine':
                 amount = Math.min(100, this.state.currentMilk);
-                message = `Milking machine extracted ${amount}ml from ${this.character.name}`;
+                message = `A milking machine extracted ${amount}ml from ${this.character.name}`;
                 expGained = Math.max(1, Math.floor(amount / 10));
                 break;
         }
@@ -286,6 +287,109 @@ export class LactationManager {
         this.saveState();
     }
 
+    // WALLET SYSTEM ================================
+    getWallet() {
+        if (!this.character) return 0;
+        return this.getGlobalVariable('wallet') || 0;
+    }
+
+    setWallet(value) {
+        if (!this.character) return;
+        this.setGlobalVariable('wallet', value);
+    }
+
+    // MILK TRANSFER ================================
+    transferMilk(source, destination, amount) {
+        amount = parseFloat(amount);
+        if (isNaN(amount) || amount <= 0) {
+            return { success: false, message: "Invalid amount" };
+        }
+
+        let sourceAmount, newSourceAmount;
+        let message = '';
+
+        // Get source amount
+        if (source === 'personal') {
+            sourceAmount = this.getPersonalStorage();
+        } else if (source === 'global') {
+            sourceAmount = this.getGlobalStorage();
+        } else {
+            return { success: false, message: "Invalid source" };
+        }
+
+        // Check if enough milk
+        if (sourceAmount < amount) {
+            return { success: false, message: "Not enough milk" };
+        }
+
+        // Update source
+        newSourceAmount = sourceAmount - amount;
+        if (source === 'personal') {
+            this.setPersonalStorage(newSourceAmount);
+        } else {
+            this.setGlobalStorage(newSourceAmount);
+        }
+
+        // Update destination
+        if (destination === 'personal') {
+            const current = this.getPersonalStorage();
+            this.setPersonalStorage(current + amount);
+            message = `Transferred ${amount}ml from ${source} to personal storage`;
+        } else if (destination === 'global') {
+            const current = this.getGlobalStorage();
+            this.setGlobalStorage(current + amount);
+            message = `Transferred ${amount}ml from ${source} to global storage`;
+        } else {
+            return { success: false, message: "Invalid destination" };
+        }
+
+        return { success: true, message };
+    }
+
+    // MILK SELLING ================================
+    sellMilk(source, amount) {
+        amount = parseFloat(amount);
+        if (isNaN(amount) || amount <= 0) {
+            return { success: false, message: "Invalid amount" };
+        }
+
+        let sourceAmount, newSourceAmount;
+
+        // Get source amount
+        if (source === 'personal') {
+            sourceAmount = this.getPersonalStorage();
+        } else if (source === 'global') {
+            sourceAmount = this.getGlobalStorage();
+        } else {
+            return { success: false, message: "Invalid source" };
+        }
+
+        // Check if enough milk
+        if (sourceAmount < amount) {
+            return { success: false, message: "Not enough milk" };
+        }
+
+        // Update source
+        newSourceAmount = sourceAmount - amount;
+        if (source === 'personal') {
+            this.setPersonalStorage(newSourceAmount);
+        } else {
+            this.setGlobalStorage(newSourceAmount);
+        }
+
+        // Calculate money (10ml = $1)
+        const moneyEarned = amount / 10;
+        const currentWallet = this.getWallet();
+        this.setWallet(currentWallet + moneyEarned);
+
+        return {
+            success: true,
+            message: `Sold ${amount}ml for $${moneyEarned.toFixed(2)}`,
+            amount: amount,
+            money: moneyEarned
+        };
+    }
+
     getProgress() {
         const capacity = this.getMilkCapacity();
         return {
@@ -293,7 +397,8 @@ export class LactationManager {
             expPercent: (this.state.exp / this.getRequiredExp()) * 100,
             nextLevelExp: this.getRequiredExp(),
             personalStorage: this.getPersonalStorage(),
-            milkPerMessage: this.getMilkPerMessage()
+            milkPerMessage: this.getMilkPerMessage(),
+            wallet: this.getWallet()
         };
     }
 }
