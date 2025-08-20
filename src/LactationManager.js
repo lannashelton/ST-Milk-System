@@ -1,4 +1,5 @@
 import { extension_settings } from "../../../../extensions.js";
+import { saveSettingsDebounced } from "../../../../../script.js";
 
 export class LactationManager {
     constructor() {
@@ -51,6 +52,7 @@ export class LactationManager {
             extension_settings.variables = { global: {} };
         }
         extension_settings.variables.global[varName] = value;
+        saveSettingsDebounced();
     }
 
     loadState() {
@@ -61,7 +63,7 @@ export class LactationManager {
         this.state.exp = parseInt(this.getGlobalVariable('lactation_exp')) || 0;
         this.state.breastSize = this.getGlobalVariable('breast_size') || 'medium';
         this.state.currentMilk = parseFloat(this.getGlobalVariable('current_milk')) || 0;
-        this.state.overfullCount = 0;
+        this.state.overfullCount = parseInt(this.getGlobalVariable('overfull_count')) || 0;
         this.globalMilkStorage = parseFloat(this.getGlobalVariable('global_milk_storage')) || 0;
 
         console.log('[LactationManager] State loaded:', this.state);
@@ -70,11 +72,12 @@ export class LactationManager {
     saveState() {
         if (!this.character) return;
 
-        this.setGlobalVariable('lactation_enabled', this.state.enabled);
+        this.setGlobalVariable('lactation_enabled', this.state.enabled ? 1 : 0);
         this.setGlobalVariable('lactation_level', this.state.level);
         this.setGlobalVariable('lactation_exp', this.state.exp);
         this.setGlobalVariable('breast_size', this.state.breastSize);
         this.setGlobalVariable('current_milk', this.state.currentMilk);
+        this.setGlobalVariable('overfull_count', this.state.overfullCount);
         this.setGlobalVariable('global_milk_storage', this.globalMilkStorage);
     }
 
@@ -111,8 +114,8 @@ export class LactationManager {
         }
 
         const settings = extension_settings.lactation_system;
-        const milkProduced = (settings?.milkPerMessage || 10) *
-                            (1 + (this.state.level - 1) * 0.05);
+        const milkPerMessage = settings?.milkPerMessage ?? 10;
+        const milkProduced = milkPerMessage * (1 + (this.state.level - 1) * 0.05);
 
         this.state.currentMilk += milkProduced;
         console.log(`[MilkProduction] ${this.character.name} produced ${milkProduced.toFixed(1)}ml (Total: ${this.state.currentMilk.toFixed(1)}ml)`);
