@@ -19,7 +19,7 @@ export class LactationManager {
             large: 600
         };
 
-        this.globalMilkStorage = 0;
+        this.destination = 'global'; // Default destination
     }
 
     setCharacter(character) {
@@ -43,6 +43,10 @@ export class LactationManager {
         return parseFloat(globalVar) || 0;
     }
 
+    getSharedGlobal(name) {
+        return parseFloat(extension_settings.variables?.global?.[name] || 0);
+    }
+
     setGlobalVariable(name, value) {
         const varName = this.getVarName(name);
         if (!varName) return;
@@ -55,6 +59,14 @@ export class LactationManager {
         saveSettingsDebounced();
     }
 
+    setSharedGlobal(name, value) {
+        if (!extension_settings.variables) {
+            extension_settings.variables = { global: {} };
+        }
+        extension_settings.variables.global[name] = value;
+        saveSettingsDebounced();
+    }
+
     loadState() {
         if (!this.character) return;
 
@@ -64,7 +76,7 @@ export class LactationManager {
         this.state.breastSize = this.getGlobalVariable('breast_size') || 'medium';
         this.state.currentMilk = parseFloat(this.getGlobalVariable('current_milk')) || 0;
         this.state.overfullCount = parseInt(this.getGlobalVariable('overfull_count')) || 0;
-        this.globalMilkStorage = parseFloat(this.getGlobalVariable('global_milk_storage')) || 0;
+        this.destination = this.getGlobalVariable('milk_destination') || 'global';
 
         console.log('[LactationManager] State loaded:', this.state);
     }
@@ -78,19 +90,19 @@ export class LactationManager {
         this.setGlobalVariable('breast_size', this.state.breastSize);
         this.setGlobalVariable('current_milk', this.state.currentMilk);
         this.setGlobalVariable('overfull_count', this.state.overfullCount);
-        this.setGlobalVariable('global_milk_storage', this.globalMilkStorage);
+        this.setGlobalVariable('milk_destination', this.destination);
     }
 
     enableLactation() {
         this.state.enabled = true;
         this.saveState();
-        return `${this.character.name} is able to lactate now!`;
+        return `${this.character.name}'s lactation system is now active`;
     }
 
     disableLactation() {
         this.state.enabled = false;
         this.saveState();
-        return `${this.character.name} is no longer able to lactate!`;
+        return `${this.character.name}'s lactation system is now disabled`;
     }
 
     setBreastSize(size) {
@@ -102,23 +114,49 @@ export class LactationManager {
         return "Invalid breast size. Use small, medium, or large.";
     }
 
+    setDestination(dest) {
+        if (['global', 'personal', 'waste'].includes(dest)) {
+            this.destination = dest;
+            this.saveState();
+            return `Milk will now go to ${dest === 'waste' ? 'waste' : dest + ' storage'}`;
+        }
+        return "Invalid destination";
+    }
+
     getMilkCapacity() {
         const baseCapacity = this.capacityMap[this.state.breastSize] || 400;
         return baseCapacity * (1 + (this.state.level - 1) * 0.1);
     }
 
+    getPersonalStorage() {
+        if (!this.character) return 0;
+        return this.getGlobalVariable('personal_storage') || 0;
+    }
+
+    addToPersonalStorage(amount) {
+        if (!this.character) return;
+        const current = this.getPersonalStorage();
+        this.setGlobalVariable('personal_storage', current + amount);
+    }
+
+    getGlobalStorage() {
+        return this.getSharedGlobal('global_milk_storage') || 0;
+    }
+
+    addToGlobalStorage(amount) {
+        const current = this.getGlobalStorage();
+        this.setSharedGlobal('global_milk_storage', current + amount);
+    }
+
     produceMilk() {
-        if (!this.character || !this.state.enabled) {
-            console.log("[MilkProduction] Skipping - no character or disabled");
-            return null;
-        }
+        if (!this.character || !this.state.enabled) return null;
 
         const settings = extension_settings.lactation_system;
         const milkPerMessage = settings?.milkPerMessage ?? 10;
         const milkProduced = milkPerMessage * (1 + (this.state.level - 1) * 0.05);
 
         this.state.currentMilk += milkProduced;
-        console.log(`[MilkProduction] ${this.character.name} produced ${milkProduced.toFixed(1)}ml (Total: ${this.state.currentMilk.toFixed(1)}ml)`);
+        console.log(`[MilkProduction] ${this.character.name} produced ${milkProduced.toFixed(1)}ml`);
 
         const capacity = this.getMilkCapacity();
         let sysMessage = null;
@@ -156,8 +194,7 @@ export class LactationManager {
         switch(method) {
             case 'hands':
                 amount = Math.min(50, this.state.currentMilk);
-                this.globalMilkStorage += amount;
-                message = `${amount}ml milk was expressed from ${this.character.name}'s breasts with hands`;
+                message = `${this.character.name} expressed ${amount}ml using their hands`;
                 expGained = amount / 5;
                 break;
 
@@ -169,13 +206,31 @@ export class LactationManager {
 
             case 'machine':
                 amount = Math.min(100, this.state.currentMilk);
-                this.globalMilkStorage += amount;
-                message = `Milking machine extracted ${amount}ml from ${this.character.name}`;
+                message = `A milking machine extracted ${amount}ml from ${this.character.name}`;
                 expGained = amount / 10;
                 break;
         }
 
+        // Always consume milk
         this.state.currentMilk -= amount;
+
+        // Handle storage based on destination (except for suck method)
+        if (method !== 'suck') {
+            switch(this.destination) {
+                case 'global':
+                    this.addToGlobalStorage(amount);
+                    message += " (added to global storage)";
+                    break;
+                case 'personal':
+                    this.addToPersonalStorage(amount);
+                    message += " (added to personal storage)";
+                    break;
+                case 'waste':
+                    message += " (wasted)";
+                    break;
+            }
+        }
+
         this.addExp(Math.floor(expGained));
 
         if (this.state.currentMilk < this.getMilkCapacity()) {
@@ -206,7 +261,8 @@ export class LactationManager {
         return {
             milkPercent: Math.min(100, (this.state.currentMilk / capacity) * 100),
             expPercent: (this.state.exp / this.getRequiredExp()) * 100,
-            nextLevelExp: this.getRequiredExp()
+            nextLevelExp: this.getRequiredExp(),
+            personalStorage: this.getPersonalStorage()
         };
     }
 }
