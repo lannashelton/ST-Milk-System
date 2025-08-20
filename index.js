@@ -46,9 +46,9 @@ try {
                 eventSource.on(event_types.CHAT_CHANGED, updateForCurrentCharacter);
                 eventSource.on(event_types.CHARACTER_CHANGED, updateForCurrentCharacter);
 
-                // FIXED: Correctly detect AI messages
-                eventSource.on(event_types.MESSAGE_RECEIVED, (data) => {
-                    if (!data.is_user && manager.state.enabled && data.name === manager.character) {
+                // FIXED: Using GENERATION_ENDED event for reliability
+                eventSource.on(event_types.GENERATION_ENDED, (data) => {
+                    if (data.success && manager.state.enabled && manager.character !== 'Unknown') {
                         const sysMessage = manager.produceMilk();
                         if (sysMessage && extension_settings[MODULE_NAME]?.enableSysMessages) {
                             panel.sendSystemMessage(sysMessage);
