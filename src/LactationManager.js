@@ -95,6 +95,7 @@ export class LactationManager {
     }
 
     produceMilk() {
+        // FIXED: Only produce milk if enabled
         if (!this.state.enabled) return null;
 
         const settings = extension_settings.lactation_system;
@@ -126,8 +127,13 @@ export class LactationManager {
     }
 
     milk(method) {
-        if (!this.state.enabled || this.state.currentMilk <= 0) {
-            return { amount: 0, message: null };
+        // FIXED: Added safety checks
+        if (!this.state.enabled) {
+            return { amount: 0, message: "Lactation is not enabled" };
+        }
+
+        if (this.state.currentMilk <= 0) {
+            return { amount: 0, message: "No milk available" };
         }
 
         let amount = 0;
