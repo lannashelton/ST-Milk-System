@@ -101,7 +101,7 @@ export class LactationPanel {
             const chatInput = document.getElementById('send_textarea');
             if (!chatInput) return;
 
-            chatInput.value = `/sys ${message}`;
+            chatInput.value = `/sys compact=true ${message}`;
 
             const sendButton = document.querySelector('#send_but');
             if (sendButton) {
