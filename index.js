@@ -43,15 +43,15 @@ try {
         function setupEventListeners() {
             try {
                 const { eventSource, event_types } = getContext();
-                eventSource.on(event_types.CHAT_CHANGED, updateForCurrentCharacter);
-                eventSource.on(event_types.CHARACTER_CHANGED, updateForCurrentCharacter);
 
-                // FIXED: Using GENERATION_ENDED event for reliability
+                // ONLY GENERATION_ENDED LISTENER REMAINS
                 eventSource.on(event_types.GENERATION_ENDED, (data) => {
-                    if (data.success && manager.state.enabled && manager.character !== 'Unknown') {
-                        const sysMessage = manager.produceMilk();
-                        if (sysMessage && extension_settings[MODULE_NAME]?.enableSysMessages) {
-                            panel.sendSystemMessage(sysMessage);
+                    console.log("[LactationSystem] GENERATION_ENDED event received");
+                    if (data.success) {
+                        console.log("[LactationSystem] Generation successful - producing milk");
+                        const milkMessage = manager.produceMilk();
+                        if (milkMessage && extension_settings[MODULE_NAME]?.enableSysMessages) {
+                            panel.sendSystemMessage(milkMessage);
                         }
                         panel.update();
                     }
@@ -68,7 +68,7 @@ try {
                 extension_settings[MODULE_NAME] = {
                     autoOpen: false,
                     enableSysMessages: true,
-                    milkPerMessage: 10, // Base ml produced per message
+                    milkPerMessage: 10,
                 };
             }
         }
