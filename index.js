@@ -45,9 +45,10 @@ try {
                 const { eventSource, event_types } = getContext();
                 eventSource.on(event_types.CHAT_CHANGED, updateForCurrentCharacter);
                 eventSource.on(event_types.CHARACTER_CHANGED, updateForCurrentCharacter);
-                // Milk production listener
-                eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, (data) => {
-                    if (manager.character === data.name) {
+
+                // FIXED: Correctly detect AI messages
+                eventSource.on(event_types.MESSAGE_RECEIVED, (data) => {
+                    if (!data.is_user && manager.state.enabled && data.name === manager.character) {
                         const sysMessage = manager.produceMilk();
                         if (sysMessage && extension_settings[MODULE_NAME]?.enableSysMessages) {
                             panel.sendSystemMessage(sysMessage);
@@ -55,6 +56,7 @@ try {
                         panel.update();
                     }
                 });
+
                 console.log("[LactationSystem] Event listeners set up");
             } catch (error) {
                 console.error("[LactationSystem] Event listener setup failed", error);
