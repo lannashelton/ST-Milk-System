@@ -84,13 +84,13 @@ export class LactationManager {
     enableLactation() {
         this.state.enabled = true;
         this.saveState();
-        return `${this.character.name}'s lactation system is now active`;
+        return `${this.character.name} is able to lactate now!`;
     }
 
     disableLactation() {
         this.state.enabled = false;
         this.saveState();
-        return `${this.character.name}'s lactation system is now disabled`;
+        return `${this.character.name} is no longer able to lactate!`;
     }
 
     setBreastSize(size) {
@@ -157,7 +157,7 @@ export class LactationManager {
             case 'hands':
                 amount = Math.min(50, this.state.currentMilk);
                 this.globalMilkStorage += amount;
-                message = `${this.character.name} expressed ${amount}ml using their hands`;
+                message = `${amount}ml milk was expressed from ${this.character.name}'s breasts with hands`;
                 expGained = amount / 5;
                 break;
 
@@ -170,7 +170,7 @@ export class LactationManager {
             case 'machine':
                 amount = Math.min(100, this.state.currentMilk);
                 this.globalMilkStorage += amount;
-                message = `A milking machine extracted ${amount}ml from ${this.character.name}`;
+                message = `Milking machine extracted ${amount}ml from ${this.character.name}`;
                 expGained = amount / 10;
                 break;
         }
