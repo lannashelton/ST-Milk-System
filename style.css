@@ -40,6 +40,16 @@
 }
 
 .lactation-content > div {
+    margin-bottom: 8px;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    background: var(--SmartThemeBlurTintColor);
+    padding: 6px 10px;
+    border-radius: 5px;
+    font-weight: bold;
     margin-bottom: 10px;
 }
 
@@ -47,7 +57,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
 }
 
 .breast-size-selector select, .destination-selector select {
@@ -60,7 +70,7 @@
 }
 
 .milk-display, .exp-display {
-    margin: 15px 0;
+    margin: 12px 0;
 }
 
 .milk-bar-container, .exp-bar-container {
