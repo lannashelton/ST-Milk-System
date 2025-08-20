@@ -2,7 +2,7 @@ import { extension_settings } from "../../../../extensions.js";
 
 export class LactationManager {
     constructor() {
-        this.character = 'Unknown';
+        this.character = null;
         this.state = {
             enabled: false,
             level: 1,
@@ -18,67 +18,82 @@ export class LactationManager {
             large: 600
         };
 
-        this.globalMilkStorage = this.getGlobalVariable('global_milk_storage') || 0;
+        this.globalMilkStorage = 0;
     }
 
-    getVarName(variable) {
-        return `${this.character.replace(/\s+/g, '_')}_${variable}`;
-    }
+    setCharacter(character) {
+        if (!character || character.name === this.character?.name) return;
 
-    getGlobalVariable(name) {
-        return window[name] || (extension_settings.variables?.global?.[name] || 0);
-    }
-
-    setGlobalVariable(name, value) {
-        window[name] = value;
-        if (!extension_settings.variables) {
-            extension_settings.variables = { global: {} };
-        }
-        extension_settings.variables.global[name] = value;
-    }
-
-    setCharacter(name) {
-        if (name === this.character) return;
-        this.character = name;
+        this.character = character;
         this.loadState();
     }
 
+    getVarName(variable) {
+        if (!this.character) return null;
+        return `${this.character.name.replace(/\s+/g, '_')}_${variable}`;
+    }
+
+    getGlobalVariable(name) {
+        const varName = this.getVarName(name);
+        if (!varName) return 0;
+
+        return window[varName] ||
+               (extension_settings.variables?.global?.[varName] || 0);
+    }
+
+    setGlobalVariable(name, value) {
+        const varName = this.getVarName(name);
+        if (!varName) return;
+
+        window[varName] = value;
+        if (!extension_settings.variables) {
+            extension_settings.variables = { global: {} };
+        }
+        extension_settings.variables.global[varName] = value;
+    }
+
     loadState() {
-        this.state.enabled = Boolean(this.getGlobalVariable(this.getVarName('lactation_enabled'))) || false;
-        this.state.level = parseInt(this.getGlobalVariable(this.getVarName('lactation_level'))) || 1;
-        this.state.exp = parseInt(this.getGlobalVariable(this.getVarName('lactation_exp'))) || 0;
-        this.state.breastSize = this.getGlobalVariable(this.getVarName('breast_size')) || 'medium';
-        this.state.currentMilk = parseFloat(this.getGlobalVariable(this.getVarName('current_milk'))) || 0;
+        if (!this.character) return;
+
+        this.state.enabled = Boolean(this.getGlobalVariable('lactation_enabled')) || false;
+        this.state.level = parseInt(this.getGlobalVariable('lactation_level')) || 1;
+        this.state.exp = parseInt(this.getGlobalVariable('lactation_exp')) || 0;
+        this.state.breastSize = this.getGlobalVariable('breast_size') || 'medium';
+        this.state.currentMilk = parseFloat(this.getGlobalVariable('current_milk')) || 0;
         this.state.overfullCount = 0;
         this.globalMilkStorage = parseFloat(this.getGlobalVariable('global_milk_storage')) || 0;
+
+        console.log('[LactationManager] State loaded:', this.state);
     }
 
     saveState() {
-        this.setGlobalVariable(this.getVarName('lactation_enabled'), this.state.enabled);
-        this.setGlobalVariable(this.getVarName('lactation_level'), this.state.level);
-        this.setGlobalVariable(this.getVarName('lactation_exp'), this.state.exp);
-        this.setGlobalVariable(this.getVarName('breast_size'), this.state.breastSize);
-        this.setGlobalVariable(this.getVarName('current_milk'), this.state.currentMilk);
+        if (!this.character) return;
+
+        this.setGlobalVariable('lactation_enabled', this.state.enabled);
+        this.setGlobalVariable('lactation_level', this.state.level);
+        this.setGlobalVariable('lactation_exp', this.state.exp);
+        this.setGlobalVariable('breast_size', this.state.breastSize);
+        this.setGlobalVariable('current_milk', this.state.currentMilk);
         this.setGlobalVariable('global_milk_storage', this.globalMilkStorage);
     }
 
     enableLactation() {
         this.state.enabled = true;
         this.saveState();
-        return `${this.character}'s lactation system is now active`;
+        return `${this.character.name}'s lactation system is now active`;
     }
 
     disableLactation() {
         this.state.enabled = false;
         this.saveState();
-        return `${this.character}'s lactation system is now disabled`;
+        return `${this.character.name}'s lactation system is now disabled`;
     }
 
     setBreastSize(size) {
         if (['small', 'medium', 'large'].includes(size)) {
             this.state.breastSize = size;
             this.saveState();
-            return `${this.character}'s breast size set to ${size}`;
+            return `${this.character.name}'s breast size set to ${size}`;
         }
         return "Invalid breast size. Use small, medium, or large.";
     }
@@ -89,10 +104,9 @@ export class LactationManager {
     }
 
     produceMilk() {
-        console.log(`[MilkProduction] Checking conditions - Enabled: ${this.state.enabled}, Character: ${this.character}`);
-        if (!this.state.enabled || this.character === 'Unknown') {
-            console.log("[MilkProduction] Aborted - Disabled or unknown character");
-            return null;
+        if (!this.character || !this.state.enabled) {
+            console.log("[MilkProduction] Skipping - no character or disabled");
+            return;
         }
 
         const settings = extension_settings.lactation_system;
@@ -100,25 +114,30 @@ export class LactationManager {
                             (1 + (this.state.level - 1) * 0.05);
 
         this.state.currentMilk += milkProduced;
-        console.log(`[MilkProduction] Added ${milkProduced.toFixed(1)}ml (Total: ${this.state.currentMilk.toFixed(1)}ml)`);
-
-        this.saveState();
+        console.log(`[MilkProduction] ${this.character.name} produced ${milkProduced.toFixed(1)}ml (Total: ${this.state.currentMilk.toFixed(1)}ml)`);
 
         const capacity = this.getMilkCapacity();
-        if (this.state.currentMilk < capacity) return null;
+        if (this.state.currentMilk >= capacity) {
+            this.state.overfullCount++;
 
-        this.state.overfullCount++;
-        console.log(`[MilkProduction] Overfull count: ${this.state.overfullCount}`);
+            if (extension_settings.lactation_system?.enableSysMessages) {
+                let message = "";
+                if (this.state.overfullCount === 1) {
+                    message = `${this.character.name}'s breasts feel uncomfortably full`;
+                } else if (this.state.overfullCount === 4) {
+                    message = `${this.character.name} winces from breast pain. Milk needs to be expressed!`;
+                } else if (this.state.overfullCount >= 7) {
+                    message = `${this.character.name} is in severe pain from engorged breasts!`;
+                }
 
-        if (this.state.overfullCount === 1) {
-            return `${this.character}'s breasts feel uncomfortably full`;
-        } else if (this.state.overfullCount === 4) {
-            return `${this.character} winces from breast pain. Milk needs to be expressed!`;
-        } else if (this.state.overfullCount >= 7) {
-            return `${this.character} is in severe pain from engorged breasts!`;
+                if (message) {
+                    // Store message to return instead of sending directly
+                    this.lastWarning = message;
+                }
+            }
         }
 
-        return null;
+        this.saveState();
     }
 
     milk(method) {
