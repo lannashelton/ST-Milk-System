@@ -1,4 +1,6 @@
+// The main script for the extension
 import { getContext, extension_settings } from "../../../extensions.js";
+import { saveSettingsDebounced } from "../../../../script.js";
 
 console.log("[LactationSystem] Starting extension loading...");
 
@@ -60,17 +62,15 @@ try {
                 eventSource.on(event_types.APP_READY, updateCharacter);
 
                 // Milk production
-                eventSource.on(event_types.GENERATION_ENDED, (data) => {
-                    console.log("[LactationSystem] GENERATION_ENDED event received");
-                    if (data.success) {
-                        const character = getCurrentCharacter();
-                        if (character) {
-                            const sysMessage = manager.produceMilk();
-                            if (sysMessage && extension_settings[MODULE_NAME]?.enableSysMessages) {
-                                panel.sendSystemMessage(sysMessage);
-                            }
-                            panel.update();
+                eventSource.on(event_types.MESSAGE_RECEIVED, () => {
+                    console.log("[LactationSystem] MESSAGE_RECEIVED event received");
+                    const character = getCurrentCharacter();
+                    if (character) {
+                        const sysMessage = manager.produceMilk();
+                        if (sysMessage && extension_settings[MODULE_NAME]?.enableSysMessages) {
+                            panel.sendSystemMessage(sysMessage);
                         }
+                        panel.update();
                     }
                 });
 
