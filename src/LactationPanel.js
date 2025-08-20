@@ -13,6 +13,7 @@ export class LactationPanel {
         panel.className = 'lactation-panel';
 
         const characterName = this.manager.character?.name || 'No Character';
+        const progress = this.manager.getProgress();
 
         panel.innerHTML = `
             <div class="lactation-header">
@@ -40,16 +41,16 @@ export class LactationPanel {
 
                 <div class="milk-display">
                     <div class="milk-bar-container">
-                        <div class="milk-bar" style="width: 0%"></div>
-                        <div class="milk-text">0/0 ml</div>
+                        <div class="milk-bar" style="width: ${progress.milkPercent}%"></div>
+                        <div class="milk-text">${this.manager.state.currentMilk.toFixed(1)}/${this.manager.getMilkCapacity().toFixed(1)} ml</div>
                     </div>
                     <div class="milk-label">Milk Level</div>
                 </div>
 
                 <div class="exp-display">
                     <div class="exp-bar-container">
-                        <div class="exp-bar" style="width: 0%"></div>
-                        <div class="exp-text">Level 1 (0/100 EXP)</div>
+                        <div class="exp-bar" style="width: ${progress.expPercent}%"></div>
+                        <div class="exp-text">Level ${this.manager.state.level} (${this.manager.state.exp}/${progress.nextLevelExp} EXP)</div>
                     </div>
                 </div>
 
@@ -61,7 +62,7 @@ export class LactationPanel {
 
                 <div class="global-storage">
                     <label>Global Milk Storage:</label>
-                    <div class="storage-amount">${this.manager.globalMilkStorage} ml</div>
+                    <div class="storage-amount">${this.manager.globalMilkStorage.toFixed(1)} ml</div>
                 </div>
                 ` : '<div class="no-character">No character selected</div>'}
             </div>
@@ -69,6 +70,36 @@ export class LactationPanel {
 
         document.body.appendChild(panel);
         return panel;
+    }
+
+    update() {
+        if (!this.domElement) return;
+
+        const progress = this.manager.getProgress();
+        const state = this.manager.state;
+        const capacity = this.manager.getMilkCapacity();
+
+        // Update milk display
+        const milkBar = this.domElement.querySelector('.milk-bar');
+        const milkText = this.domElement.querySelector('.milk-text');
+        if (milkBar && milkText) {
+            milkBar.style.width = `${progress.milkPercent}%`;
+            milkText.textContent = `${state.currentMilk.toFixed(1)}/${capacity.toFixed(1)} ml`;
+        }
+
+        // Update EXP display
+        const expBar = this.domElement.querySelector('.exp-bar');
+        const expText = this.domElement.querySelector('.exp-text');
+        if (expBar && expText) {
+            expBar.style.width = `${progress.expPercent}%`;
+            expText.textContent = `Level ${state.level} (${state.exp}/${progress.nextLevelExp} EXP)`;
+        }
+
+        // Update global storage
+        const storageEl = this.domElement.querySelector('.storage-amount');
+        if (storageEl) {
+            storageEl.textContent = `${this.manager.globalMilkStorage.toFixed(1)} ml`;
+        }
     }
 
     sendSystemMessage(message) {
@@ -119,7 +150,7 @@ export class LactationPanel {
 
     attachEventListeners() {
         // Enable/disable toggle
-        this.domElement.querySelector('#lactation-enabled').addEventListener('change', (e) => {
+        this.domElement.querySelector('#lactation-enabled')?.addEventListener('change', (e) => {
             const message = e.target.checked ?
                 this.manager.enableLactation() :
                 this.manager.disableLactation();
@@ -131,7 +162,7 @@ export class LactationPanel {
         });
 
         // Breast size selector
-        this.domElement.querySelector('#breast-size-select').addEventListener('change', (e) => {
+        this.domElement.querySelector('#breast-size-select')?.addEventListener('change', (e) => {
             const message = this.manager.setBreastSize(e.target.value);
             if (extension_settings.lactation_system?.enableSysMessages) {
                 this.sendSystemMessage(message);
@@ -157,22 +188,27 @@ export class LactationPanel {
         });
 
         // Refresh button
-        this.domElement.querySelector('#lactation-refresh').addEventListener('click', () => {
-            this.manager.loadState();
-            toastr.success("Lactation state reloaded", "Refresh Complete");
-            this.update();
-        });
+        const refreshBtn = this.domElement.querySelector('#lactation-refresh');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => {
+                this.manager.loadState();
+                toastr.success("Lactation state reloaded", "Refresh Complete");
+                this.update();
+            });
+        }
 
         // Close button
-        this.domElement.querySelector('#lactation-close').addEventListener('click', () => this.hide());
+        const closeBtn = this.domElement.querySelector('#lactation-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => this.hide());
+        }
     }
 
     updateCharacter(name) {
-        this.manager.setCharacter(name);
-        if (this.domElement) {
-            const header = this.domElement.querySelector('.lactation-header h3');
-            if (header) header.textContent = `Lactation System - ${name}`;
-        }
+        if (!this.domElement) return;
+
+        const header = this.domElement.querySelector('.lactation-header h3');
+        if (header) header.textContent = `Lactation System - ${name}`;
         this.update();
     }
 
