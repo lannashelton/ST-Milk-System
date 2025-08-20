@@ -31,6 +31,11 @@ export class LactationPanel {
                     <input type="checkbox" id="lactation-enabled" ${this.manager.state.enabled ? 'checked' : ''}>
                 </div>
 
+                <div class="info-row">
+                    <span>Level ${this.manager.state.level}</span>
+                    <span>${progress.milkPerMessage}ml/message</span>
+                </div>
+
                 <div class="breast-size-selector">
                     <label>Breast Size:</label>
                     <select id="breast-size-select">
@@ -120,6 +125,12 @@ export class LactationPanel {
         }
         if (globalStorageEl) {
             globalStorageEl.textContent = `${globalStorage.toFixed(1)} ml`;
+        }
+
+        // Update level info
+        const levelInfo = this.domElement.querySelector('.info-row span:last-child');
+        if (levelInfo) {
+            levelInfo.textContent = `${progress.milkPerMessage}ml/message`;
         }
     }
 
