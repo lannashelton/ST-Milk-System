@@ -3,7 +3,7 @@
     position: fixed;
     top: 120px;
     right: 20px;
-    width: 300px;
+    width: 320px;
     background: var(--SmartThemeBlurTintColor);
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
     border: 1px solid var(--SmartThemeBorderColor);
@@ -43,13 +43,14 @@
     margin-bottom: 10px;
 }
 
-.lactation-toggle, .breast-size-selector {
+.lactation-toggle, .breast-size-selector, .destination-selector {
     display: flex;
     align-items: center;
     gap: 10px;
+    margin-bottom: 10px;
 }
 
-.breast-size-selector select {
+.breast-size-selector select, .destination-selector select {
     flex-grow: 1;
     padding: 5px;
     border-radius: 4px;
@@ -118,11 +119,28 @@
     color: var(--SmartThemeBodyBgColor);
 }
 
-.global-storage {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.storage-display {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
     padding-top: 10px;
     border-top: 1px solid var(--SmartThemeBorderColor);
+}
+
+.storage-item {
+    background: var(--SmartThemeBlurTintColor);
+    padding: 8px;
+    border-radius: 5px;
+    text-align: center;
+}
+
+.storage-item label {
+    display: block;
+    font-size: 0.8em;
+    margin-bottom: 3px;
     font-weight: bold;
+}
+
+.storage-amount {
+    font-size: 1.1em;
 }
