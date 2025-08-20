@@ -7,19 +7,17 @@ export class LactationManager {
             enabled: false,
             level: 1,
             exp: 0,
-            breastSize: 'medium', // small, medium, large
+            breastSize: 'medium',
             currentMilk: 0,
-            overfullCount: 0, // Counts messages since becoming full
+            overfullCount: 0,
         };
 
-        // Milk production capacity per breast size (ml)
         this.capacityMap = {
             small: 200,
             medium: 400,
             large: 600
         };
 
-        // Shared global milk storage
         this.globalMilkStorage = this.getGlobalVariable('global_milk_storage') || 0;
     }
 
@@ -32,15 +30,11 @@ export class LactationManager {
     }
 
     setGlobalVariable(name, value) {
-        try {
-            window[name] = value;
-            if (!extension_settings.variables) {
-                extension_settings.variables = { global: {} };
-            }
-            extension_settings.variables.global[name] = value;
-        } catch (error) {
-            console.error("[LactationManager] Variable set failed", error);
+        window[name] = value;
+        if (!extension_settings.variables) {
+            extension_settings.variables = { global: {} };
         }
+        extension_settings.variables.global[name] = value;
     }
 
     setCharacter(name) {
@@ -91,38 +85,40 @@ export class LactationManager {
 
     getMilkCapacity() {
         const baseCapacity = this.capacityMap[this.state.breastSize] || 400;
-        return baseCapacity * (1 + (this.state.level - 1) * 0.1); // +10% capacity per level
+        return baseCapacity * (1 + (this.state.level - 1) * 0.1);
     }
 
     produceMilk() {
-        if (!this.state.enabled || this.character === 'Unknown') return null;
+        console.log(`[MilkProduction] Checking conditions - Enabled: ${this.state.enabled}, Character: ${this.character}`);
+        if (!this.state.enabled || this.character === 'Unknown') {
+            console.log("[MilkProduction] Aborted - Disabled or unknown character");
+            return null;
+        }
 
         const settings = extension_settings.lactation_system;
         const milkProduced = (settings?.milkPerMessage || 10) *
-                            (1 + (this.state.level - 1) * 0.05); // +5% production per level
+                            (1 + (this.state.level - 1) * 0.05);
 
         this.state.currentMilk += milkProduced;
-        const capacity = this.getMilkCapacity();
-
-        let sysMessage = null;
-
-        // Fullness warnings
-        if (this.state.currentMilk >= capacity) {
-            this.state.overfullCount++;
-
-            if (this.state.overfullCount === 1) {
-                sysMessage = `${this.character}'s breasts feel uncomfortably full`;
-            }
-            else if (this.state.overfullCount === 4) {
-                sysMessage = `${this.character} winces from breast pain. Milk needs to be expressed!`;
-            }
-            else if (this.state.overfullCount >= 7) {
-                sysMessage = `${this.character} is in severe pain from engorged breasts!`;
-            }
-        }
+        console.log(`[MilkProduction] Added ${milkProduced.toFixed(1)}ml (Total: ${this.state.currentMilk.toFixed(1)}ml)`);
 
         this.saveState();
-        return sysMessage;
+
+        const capacity = this.getMilkCapacity();
+        if (this.state.currentMilk < capacity) return null;
+
+        this.state.overfullCount++;
+        console.log(`[MilkProduction] Overfull count: ${this.state.overfullCount}`);
+
+        if (this.state.overfullCount === 1) {
+            return `${this.character}'s breasts feel uncomfortably full`;
+        } else if (this.state.overfullCount === 4) {
+            return `${this.character} winces from breast pain. Milk needs to be expressed!`;
+        } else if (this.state.overfullCount >= 7) {
+            return `${this.character} is in severe pain from engorged breasts!`;
+        }
+
+        return null;
     }
 
     milk(method) {
@@ -143,28 +139,26 @@ export class LactationManager {
                 amount = Math.min(50, this.state.currentMilk);
                 this.globalMilkStorage += amount;
                 message = `${this.character} expressed ${amount}ml using their hands`;
-                expGained = amount / 5; // 0.2 EXP per ml
+                expGained = amount / 5;
                 break;
 
             case 'suck':
                 amount = Math.min(60, this.state.currentMilk);
-                // Milk is consumed, not stored
                 message = `${amount}ml was drunk directly from ${this.character}'s breasts`;
-                expGained = amount / 4; // 0.25 EXP per ml
+                expGained = amount / 4;
                 break;
 
             case 'machine':
                 amount = Math.min(100, this.state.currentMilk);
                 this.globalMilkStorage += amount;
                 message = `A milking machine extracted ${amount}ml from ${this.character}`;
-                expGained = amount / 10; // 0.1 EXP per ml (faster but less EXP)
+                expGained = amount / 10;
                 break;
         }
 
         this.state.currentMilk -= amount;
         this.addExp(Math.floor(expGained));
 
-        // Reset overfull counter when milked
         if (this.state.currentMilk < this.getMilkCapacity()) {
             this.state.overfullCount = 0;
         }
@@ -176,7 +170,6 @@ export class LactationManager {
     addExp(amount) {
         this.state.exp += amount;
 
-        // Check for level up (100 EXP per level)
         while (this.state.exp >= this.getRequiredExp()) {
             this.state.exp -= this.getRequiredExp();
             this.state.level = Math.min(10, this.state.level + 1);
@@ -186,7 +179,7 @@ export class LactationManager {
     }
 
     getRequiredExp() {
-        return this.state.level * 100; // 100 for L1, 200 for L2, etc.
+        return this.state.level * 100;
     }
 
     getProgress() {
