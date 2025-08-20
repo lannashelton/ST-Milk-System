@@ -37,8 +37,9 @@ export class LactationManager {
         const varName = this.getVarName(name);
         if (!varName) return 0;
 
-        return window[varName] ||
-               (extension_settings.variables?.global?.[varName] || 0);
+        const globalVar = window[varName] ||
+                         (extension_settings.variables?.global?.[varName] || 0);
+        return parseFloat(globalVar) || 0;
     }
 
     setGlobalVariable(name, value) {
@@ -106,7 +107,7 @@ export class LactationManager {
     produceMilk() {
         if (!this.character || !this.state.enabled) {
             console.log("[MilkProduction] Skipping - no character or disabled");
-            return;
+            return null;
         }
 
         const settings = extension_settings.lactation_system;
@@ -117,31 +118,27 @@ export class LactationManager {
         console.log(`[MilkProduction] ${this.character.name} produced ${milkProduced.toFixed(1)}ml (Total: ${this.state.currentMilk.toFixed(1)}ml)`);
 
         const capacity = this.getMilkCapacity();
+        let sysMessage = null;
+
         if (this.state.currentMilk >= capacity) {
             this.state.overfullCount++;
+            console.log(`[MilkProduction] Overfull count: ${this.state.overfullCount}`);
 
-            if (extension_settings.lactation_system?.enableSysMessages) {
-                let message = "";
-                if (this.state.overfullCount === 1) {
-                    message = `${this.character.name}'s breasts feel uncomfortably full`;
-                } else if (this.state.overfullCount === 4) {
-                    message = `${this.character.name} winces from breast pain. Milk needs to be expressed!`;
-                } else if (this.state.overfullCount >= 7) {
-                    message = `${this.character.name} is in severe pain from engorged breasts!`;
-                }
-
-                if (message) {
-                    // Store message to return instead of sending directly
-                    this.lastWarning = message;
-                }
+            if (this.state.overfullCount === 1) {
+                sysMessage = `${this.character.name}'s breasts feel uncomfortably full`;
+            } else if (this.state.overfullCount === 4) {
+                sysMessage = `${this.character.name} winces from breast pain. Milk needs to be expressed!`;
+            } else if (this.state.overfullCount >= 7) {
+                sysMessage = `${this.character.name} is in severe pain from engorged breasts!`;
             }
         }
 
         this.saveState();
+        return sysMessage;
     }
 
     milk(method) {
-        if (!this.state.enabled) {
+        if (!this.character || !this.state.enabled) {
             return { amount: 0, message: "Lactation is not enabled" };
         }
 
@@ -157,20 +154,20 @@ export class LactationManager {
             case 'hands':
                 amount = Math.min(50, this.state.currentMilk);
                 this.globalMilkStorage += amount;
-                message = `${this.character} expressed ${amount}ml using their hands`;
+                message = `${this.character.name} expressed ${amount}ml using their hands`;
                 expGained = amount / 5;
                 break;
 
             case 'suck':
                 amount = Math.min(60, this.state.currentMilk);
-                message = `${amount}ml was drunk directly from ${this.character}'s breasts`;
+                message = `${amount}ml was drunk directly from ${this.character.name}'s breasts`;
                 expGained = amount / 4;
                 break;
 
             case 'machine':
                 amount = Math.min(100, this.state.currentMilk);
                 this.globalMilkStorage += amount;
-                message = `A milking machine extracted ${amount}ml from ${this.character}`;
+                message = `A milking machine extracted ${amount}ml from ${this.character.name}`;
                 expGained = amount / 10;
                 break;
         }
