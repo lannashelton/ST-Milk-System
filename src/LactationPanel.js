@@ -12,15 +12,18 @@ export class LactationPanel {
         panel.id = 'lactation-panel';
         panel.className = 'lactation-panel';
 
+        const characterName = this.manager.character?.name || 'No Character';
+
         panel.innerHTML = `
             <div class="lactation-header">
-                <h3>Lactation System - ${this.manager.character}</h3>
+                <h3>Lactation System - ${characterName}</h3>
                 <div class="lactation-actions">
                     <span class="lactation-action" id="lactation-refresh">↻</span>
                     <span class="lactation-action" id="lactation-close">×</span>
                 </div>
             </div>
             <div class="lactation-content">
+                ${this.manager.character ? `
                 <div class="lactation-toggle">
                     <label>Lactation Enabled:</label>
                     <input type="checkbox" id="lactation-enabled" ${this.manager.state.enabled ? 'checked' : ''}>
@@ -60,41 +63,12 @@ export class LactationPanel {
                     <label>Global Milk Storage:</label>
                     <div class="storage-amount">${this.manager.globalMilkStorage} ml</div>
                 </div>
+                ` : '<div class="no-character">No character selected</div>'}
             </div>
         `;
 
         document.body.appendChild(panel);
         return panel;
-    }
-
-    update() {
-        if (!this.domElement) return;
-
-        const progress = this.manager.getProgress();
-        const state = this.manager.state;
-        const capacity = this.manager.getMilkCapacity();
-
-        // Update milk display
-        const milkBar = this.domElement.querySelector('.milk-bar');
-        const milkText = this.domElement.querySelector('.milk-text');
-        if (milkBar && milkText) {
-            milkBar.style.width = `${progress.milkPercent}%`;
-            milkText.textContent = `${state.currentMilk.toFixed(1)}/${capacity.toFixed(1)} ml`;
-        }
-
-        // Update EXP display
-        const expBar = this.domElement.querySelector('.exp-bar');
-        const expText = this.domElement.querySelector('.exp-text');
-        if (expBar && expText) {
-            expBar.style.width = `${progress.expPercent}%`;
-            expText.textContent = `Level ${state.level} (${state.exp}/${progress.nextLevelExp} EXP)`;
-        }
-
-        // Update global storage
-        const storageEl = this.domElement.querySelector('.storage-amount');
-        if (storageEl) {
-            storageEl.textContent = `${this.manager.globalMilkStorage.toFixed(1)} ml`;
-        }
     }
 
     sendSystemMessage(message) {
