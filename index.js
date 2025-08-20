@@ -13,9 +13,29 @@ try {
         const manager = new LactationManager();
         const panel = new LactationPanel(manager);
 
-        function getCharacterName() {
+        function getCurrentCharacter() {
             const context = getContext();
-            return context.characters[context.characterId]?.name || 'Unknown';
+            // Get the actual character object, not just name
+            return context.characters[context.characterId];
+        }
+
+        function updateCharacter() {
+            try {
+                const character = getCurrentCharacter();
+                if (!character) {
+                    console.log("[LactationSystem] No character selected");
+                    return;
+                }
+
+                manager.setCharacter(character);
+                panel.updateCharacter(character.name);
+                console.log(`[LactationSystem] Character set: ${character.name}`);
+
+                // DEBUG: Show character data in console
+                console.log("[LactationSystem] Character data:", character);
+            } catch (error) {
+                console.error("[LactationSystem] Character update failed", error);
+            }
         }
 
         function registerLactationCommand() {
@@ -29,31 +49,26 @@ try {
             }
         }
 
-        function updateForCurrentCharacter() {
-            try {
-                const charName = getCharacterName();
-                manager.setCharacter(charName);
-                panel.updateCharacter(charName);
-                console.log(`[LactationSystem] Set character: ${charName}`);
-            } catch (error) {
-                console.error("[LactationSystem] Character update failed", error);
-            }
-        }
-
         function setupEventListeners() {
             try {
                 const { eventSource, event_types } = getContext();
 
-                // ONLY GENERATION_ENDED LISTENER REMAINS
+                // Update character on relevant events
+                eventSource.on(event_types.CHAT_CHANGED, updateCharacter);
+                eventSource.on(event_types.CHARACTER_CHANGED, updateCharacter);
+
+                // Use APP_READY for initial load
+                eventSource.on(event_types.APP_READY, updateCharacter);
+
+                // Milk production
                 eventSource.on(event_types.GENERATION_ENDED, (data) => {
                     console.log("[LactationSystem] GENERATION_ENDED event received");
                     if (data.success) {
-                        console.log("[LactationSystem] Generation successful - producing milk");
-                        const milkMessage = manager.produceMilk();
-                        if (milkMessage && extension_settings[MODULE_NAME]?.enableSysMessages) {
-                            panel.sendSystemMessage(milkMessage);
+                        const character = getCurrentCharacter();
+                        if (character) {
+                            manager.produceMilk();
+                            panel.update();
                         }
-                        panel.update();
                     }
                 });
 
@@ -116,8 +131,10 @@ try {
         initSettings();
         registerLactationCommand();
         setupEventListeners();
-        updateForCurrentCharacter();
         createSettingsUI();
+
+        // Initialize immediately
+        updateCharacter();
 
         if (extension_settings[MODULE_NAME].autoOpen) {
             setTimeout(() => panel.show(), 1000);
