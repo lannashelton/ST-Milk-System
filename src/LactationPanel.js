@@ -263,7 +263,15 @@ export class LactationPanel {
     update() {
         if (!this.domElement) return;
 
-        // Update dropdown states
+        // Wait until after update logic before setting dropdown values
+        const progress = this.manager.getProgress();
+        const state = this.manager.state;
+        const capacity = this.manager.getMilkCapacity();
+        const globalStorage = this.manager.getGlobalStorage();
+
+        // ... [milk bar, exp bar, storage display logic remains unchanged] ...
+
+        // CORRECTED DROPDOWN UPDATES - MUST COME AFTER STATE IS LOADED
         const stateSelect = this.domElement.querySelector('#lactation-state-select');
         if (stateSelect) {
             stateSelect.value = this.manager.state.enabled ? 'enabled' : 'disabled';
