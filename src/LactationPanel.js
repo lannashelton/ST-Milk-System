@@ -263,21 +263,22 @@ export class LactationPanel {
     update() {
         if (!this.domElement) return;
 
+        // Update dropdown states
+        const stateSelect = this.domElement.querySelector('#lactation-state-select');
+        if (stateSelect) {
+            stateSelect.value = this.manager.state.enabled ? 'enabled' : 'disabled';
+        }
+
+        const breastSizeSelect = this.domElement.querySelector('#breast-size-select');
+        if (breastSizeSelect) {
+            breastSizeSelect.value = this.manager.state.breastSize;
+        }
+
         const progress = this.manager.getProgress();
         const state = this.manager.state;
         const capacity = this.manager.getMilkCapacity();
         const globalStorage = this.manager.getGlobalStorage();
 
-        const stateSelect = this.domElement.querySelector('#lactation-state-select');
-        if (stateSelect) {
-            stateSelect.value = this.manager.state.enabled ? 'enabled' : 'disabled';
-        }
-    
-        const breastSizeSelect = this.domElement.querySelector('#breast-size-select');
-        if (breastSizeSelect) {
-            breastSizeSelect.value = this.manager.state.breastSize;
-        }
-        
         const milkBar = this.domElement.querySelector('.milk-bar');
         const milkText = this.domElement.querySelector('.milk-text');
         if (milkBar && milkText) {
@@ -359,12 +360,11 @@ export class LactationPanel {
     }
 
     attachEventListeners() {
-        // Replace checkbox listener with dropdown listener
         this.domElement.querySelector('#lactation-state-select')?.addEventListener('change', (e) => {
             const message = e.target.value === 'enabled' ?
                 this.manager.enableLactation() :
                 this.manager.disableLactation();
-    
+
             if (extension_settings.lactation_system?.enableSysMessages) {
                 this.sendSystemMessage(message);
             }
