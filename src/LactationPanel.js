@@ -28,9 +28,12 @@ export class LactationPanel {
             </div>
             <div class="lactation-content">
                 ${this.manager.character ? `
-                <div class="lactation-toggle">
-                    <label>Lactation Enabled:</label>
-                    <input type="checkbox" id="lactation-enabled" ${this.manager.state.enabled ? 'checked' : ''}>
+                <div class="lactation-state-selector">
+                    <label>Lactation State:</label>
+                    <select id="lactation-state-select">
+                        <option value="disabled" ${!this.manager.state.enabled ? 'selected' : ''}>Disabled</option>
+                        <option value="enabled" ${this.manager.state.enabled ? 'selected' : ''}>Enabled</option>
+                    </select>
                 </div>
 
                 <div class="info-row">
@@ -265,6 +268,16 @@ export class LactationPanel {
         const capacity = this.manager.getMilkCapacity();
         const globalStorage = this.manager.getGlobalStorage();
 
+        const stateSelect = this.domElement.querySelector('#lactation-state-select');
+        if (stateSelect) {
+            stateSelect.value = this.manager.state.enabled ? 'enabled' : 'disabled';
+        }
+    
+        const breastSizeSelect = this.domElement.querySelector('#breast-size-select');
+        if (breastSizeSelect) {
+            breastSizeSelect.value = this.manager.state.breastSize;
+        }
+        
         const milkBar = this.domElement.querySelector('.milk-bar');
         const milkText = this.domElement.querySelector('.milk-text');
         if (milkBar && milkText) {
@@ -346,11 +359,12 @@ export class LactationPanel {
     }
 
     attachEventListeners() {
-        this.domElement.querySelector('#lactation-enabled')?.addEventListener('change', (e) => {
-            const message = e.target.checked ?
+        // Replace checkbox listener with dropdown listener
+        this.domElement.querySelector('#lactation-state-select')?.addEventListener('change', (e) => {
+            const message = e.target.value === 'enabled' ?
                 this.manager.enableLactation() :
                 this.manager.disableLactation();
-
+    
             if (extension_settings.lactation_system?.enableSysMessages) {
                 this.sendSystemMessage(message);
             }
