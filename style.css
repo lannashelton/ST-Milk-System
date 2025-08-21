@@ -251,3 +251,20 @@
     background: var(--SmartThemeBlurTintColor);
     border-radius: 5px;
 }
+
+/* Add new style for lactation state selector */
+.lactation-state-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.lactation-state-selector select {
+    flex-grow: 1;
+    padding: 5px;
+    border-radius: 4px;
+    background: var(--SmartThemeBodyBgColor);
+    color: var(--SmartThemeBodyColor);
+    border: 1px solid var(--SmartThemeBorderColor);
+}
