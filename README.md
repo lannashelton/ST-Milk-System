@@ -20,7 +20,7 @@ Use `/lactation` slash command to open the Milk System window.
 
 **Enable/Disable Lactation:** Enables/Disables milk production for active character.
 
-**Breast Size:** Breast size affects milk capacity. *(Planned: Breast growth system. For now you select your desired breast size manually.)
+**Breast Size:** Breast size affects milk capacity. *(Planned: EXP and level based breast growth system. For now you select your desired breast size manually.)*
 
 **Milk Capacity:** Each time AI character sends a message, they produce milk based on their lactation level. Produced milk is stored in breasts until character is milked. If breasts milk capacity becomes full, *you are given a warning* and *AI character starts to feel discomfort*. If you don't milk them for a prolonged time, *they will be in pain and great discomfort.* *(Planned: There will be penalties in future.)*
 
