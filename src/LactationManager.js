@@ -95,10 +95,12 @@ export class LactationManager {
 
     loadState() {
         if (!this.character) return;
-
-        // For new characters, default enabled to false
-        const enabledVar = this.getGlobalVariable('lactation_enabled');
-        this.state.enabled = typeof enabledVar === 'number' ? Boolean(enabledVar) : false;
+    
+        // Get the raw value from storage
+        const enabledValue = this.getGlobalVariable('lactation_enabled');
+    
+        // Convert to boolean with proper fallback
+        this.state.enabled = enabledValue === 1 || enabledValue === true;
 
         this.state.level = parseInt(this.getGlobalVariable('lactation_level')) || 1;
         this.state.exp = parseInt(this.getGlobalVariable('lactation_exp')) || 0;
