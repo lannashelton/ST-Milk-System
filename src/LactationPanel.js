@@ -301,7 +301,7 @@ export class LactationPanel {
             levelInfo.textContent = `${progress.milkPerMessage}ml/message`;
         }
 
-        // CORRECTED DROPDOWN UPDATES - MOVED TO END TO ENSURE STATE IS LOADED
+        // UPDATE DROPDOWN VALUES - MUST BE AFTER STATE IS LOADED
         const stateSelect = this.domElement.querySelector('#lactation-state-select');
         if (stateSelect) {
             stateSelect.value = this.manager.state.enabled ? 'enabled' : 'disabled';
