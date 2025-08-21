@@ -60,13 +60,15 @@ export class LactationManager {
         return `${this.character.name.replace(/\s+/g, '_')}_${variable}`;
     }
 
-    getGlobalVariable(name) {
+    getGlobalVariable(name, asString = false) {
         const varName = this.getVarName(name);
-        if (!varName) return 0;
+        if (!varName) return asString ? '' : 0;
 
-        const globalVar = window[varName] ||
-                         (extension_settings.variables?.global?.[varName] || 0);
-        return parseFloat(globalVar) || 0;
+        const value = window[varName] ||
+                     (extension_settings.variables?.global?.[varName] ||
+                     (asString ? '' : 0));
+
+        return asString ? String(value) : parseFloat(value) || 0;
     }
 
     getSharedGlobal(name) {
@@ -103,18 +105,15 @@ export class LactationManager {
         this.state.level = parseInt(this.getGlobalVariable('lactation_level')) || 1;
         this.state.exp = parseInt(this.getGlobalVariable('lactation_exp')) || 0;
 
-        // FIXED: Properly handle breast size as string
-        const breastSize = this.getGlobalVariable('breast_size');
-        if (typeof breastSize === 'string' &&
-            ['small', 'medium', 'large'].includes(breastSize)) {
-            this.state.breastSize = breastSize;
-        } else {
-            this.state.breastSize = 'medium'; // Default
-        }
+        // Get breast size as string value
+        const breastSize = this.getGlobalVariable('breast_size', true);
+        this.state.breastSize = ['small', 'medium', 'large'].includes(breastSize)
+            ? breastSize
+            : 'medium';
 
         this.state.currentMilk = parseFloat(this.getGlobalVariable('current_milk')) || 0;
         this.state.overfullCount = parseInt(this.getGlobalVariable('overfull_count')) || 0;
-        this.destination = this.getGlobalVariable('milk_destination') || 'global';
+        this.destination = this.getGlobalVariable('milk_destination', true) || 'global';
 
         console.log('[LactationManager] State loaded:', this.state);
     }
