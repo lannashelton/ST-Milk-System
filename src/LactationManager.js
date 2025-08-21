@@ -96,6 +96,15 @@ export class LactationManager {
     loadState() {
         if (!this.character) return;
 
+        // CORRECTED BREAST SIZE LOADING
+        const breastSize = this.getGlobalVariable('breast_size');
+        if (typeof breastSize === 'string' &&
+            ['small', 'medium', 'large'].includes(breastSize)) {
+            this.state.breastSize = breastSize;
+        } else {
+            this.state.breastSize = 'medium'; // Default
+        }
+        
         // For new characters, default enabled to false
         const enabledVar = this.getGlobalVariable('lactation_enabled');
         this.state.enabled = typeof enabledVar === 'number' ? Boolean(enabledVar) : false;
