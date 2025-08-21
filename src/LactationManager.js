@@ -96,7 +96,14 @@ export class LactationManager {
     loadState() {
         if (!this.character) return;
 
-        // CORRECTED BREAST SIZE LOADING
+        // For new characters, default enabled to false
+        const enabledVar = this.getGlobalVariable('lactation_enabled');
+        this.state.enabled = typeof enabledVar === 'number' ? Boolean(enabledVar) : false;
+
+        this.state.level = parseInt(this.getGlobalVariable('lactation_level')) || 1;
+        this.state.exp = parseInt(this.getGlobalVariable('lactation_exp')) || 0;
+
+        // FIXED: Properly handle breast size as string
         const breastSize = this.getGlobalVariable('breast_size');
         if (typeof breastSize === 'string' &&
             ['small', 'medium', 'large'].includes(breastSize)) {
@@ -104,14 +111,7 @@ export class LactationManager {
         } else {
             this.state.breastSize = 'medium'; // Default
         }
-        
-        // For new characters, default enabled to false
-        const enabledVar = this.getGlobalVariable('lactation_enabled');
-        this.state.enabled = typeof enabledVar === 'number' ? Boolean(enabledVar) : false;
 
-        this.state.level = parseInt(this.getGlobalVariable('lactation_level')) || 1;
-        this.state.exp = parseInt(this.getGlobalVariable('lactation_exp')) || 0;
-        this.state.breastSize = this.getGlobalVariable('breast_size') || 'medium';
         this.state.currentMilk = parseFloat(this.getGlobalVariable('current_milk')) || 0;
         this.state.overfullCount = parseInt(this.getGlobalVariable('overfull_count')) || 0;
         this.destination = this.getGlobalVariable('milk_destination') || 'global';
