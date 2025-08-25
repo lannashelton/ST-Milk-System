@@ -133,31 +133,31 @@ export class LactationManager {
     enableLactation() {
         this.state.enabled = true;
         this.saveState();
-        return `${this.character.name}'s lactation system is now active`;
+        return `[Lactation System] ${this.character.name} is lactating now!`;
     }
 
     disableLactation() {
         this.state.enabled = false;
         this.saveState();
-        return `${this.character.name}'s lactation system is now disabled`;
+        return `[Lactation System] ${this.character.name} is no longer lactating!`;
     }
 
     setBreastSize(size) {
         if (['small', 'medium', 'large'].includes(size)) {
             this.state.breastSize = size;
             this.saveState();
-            return `${this.character.name}'s breast size set to ${size}`;
+            return `[Lactation System] ${this.character.name}'s breast size set to ${size}`;
         }
-        return "Invalid breast size. Use small, medium, or large.";
+        return "[Lactation System] Invalid breast size. Use small, medium, or large.";
     }
 
     setDestination(dest) {
         if (['global', 'personal', 'waste'].includes(dest)) {
             this.destination = dest;
             this.saveState();
-            return `Milk will now go to ${dest === 'waste' ? 'waste' : dest + ' storage'}`;
+            return `[Lactation System] Milk will now go to ${dest === 'waste' ? 'waste' : dest + ' storage'}`;
         }
-        return "Invalid destination";
+        return "[Lactation System] Invalid destination";
     }
 
     getMilkCapacity() {
@@ -206,11 +206,11 @@ export class LactationManager {
             console.log(`[MilkProduction] Overfull count: ${this.state.overfullCount}`);
 
             if (this.state.overfullCount === 1) {
-                sysMessage = `${this.character.name}'s breasts feel uncomfortably full`;
+                sysMessage = `[Lactation System] ${this.character.name}'s breasts feel uncomfortably full`;
             } else if (this.state.overfullCount === 4) {
-                sysMessage = `${this.character.name} winces from breast pain. Milk needs to be expressed!`;
+                sysMessage = `[Lactation System] ${this.character.name} winces from breast pain. Milk needs to be expressed!`;
             } else if (this.state.overfullCount >= 7) {
-                sysMessage = `${this.character.name} is in severe pain from engorged breasts!`;
+                sysMessage = `[Lactation System] ${this.character.name} is in severe pain from engorged breasts!`;
             }
         }
 
@@ -234,19 +234,19 @@ export class LactationManager {
         switch(method) {
             case 'hands':
                 amount = Math.min(50, this.state.currentMilk);
-                message = `${this.character.name} expressed ${amount}ml using their hands`;
+                message = `[Lactation System] ${amount}ml milk is expressed from ${this.character.name} by using hands`;
                 expGained = Math.max(1, Math.floor(amount / 5));
                 break;
 
             case 'suck':
                 amount = Math.min(60, this.state.currentMilk);
-                message = `${amount}ml was drunk directly from ${this.character.name}'s breasts`;
+                message = `[Lactation System] ${amount}ml was drunk directly from ${this.character.name}'s breasts`;
                 expGained = Math.max(1, Math.floor(amount / 4));
                 break;
 
             case 'machine':
                 amount = Math.min(100, this.state.currentMilk);
-                message = `A milking machine extracted ${amount}ml from ${this.character.name}`;
+                message = `[Lactation System] Milking machine extracted ${amount}ml from ${this.character.name}`;
                 expGained = Math.max(1, Math.floor(amount / 10));
                 break;
         }
@@ -342,11 +342,11 @@ export class LactationManager {
         if (destination === 'personal') {
             const current = this.getPersonalStorage();
             this.setPersonalStorage(current + amount);
-            message = `Transferred ${amount}ml from ${source} to personal storage`;
+            message = `[Lactation System] Transferred ${amount}ml from ${source} to personal storage`;
         } else if (destination === 'global') {
             const current = this.getGlobalStorage();
             this.setGlobalStorage(current + amount);
-            message = `Transferred ${amount}ml from ${source} to global storage`;
+            message = `[Lactation System] Transferred ${amount}ml from ${source} to global storage`;
         } else {
             return { success: false, message: "Invalid destination" };
         }
@@ -392,7 +392,7 @@ export class LactationManager {
 
         return {
             success: true,
-            message: `Sold ${amount}ml for $${moneyEarned.toFixed(2)}`,
+            message: `[Lactation System] Sold ${amount}ml breast milk for $${moneyEarned.toFixed(2)}`,
             amount: amount,
             money: moneyEarned
         };
